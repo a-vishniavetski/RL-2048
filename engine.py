@@ -20,7 +20,7 @@ def init_board():
     return board
 
 def check_wincon(board):
-    if board[board == 2048].any():
+    if (board == 2048).any():
         return True
     return False
 

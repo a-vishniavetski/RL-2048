@@ -30,8 +30,10 @@ if __name__ == "__main__":
         if board_has_changed:
             spawn_random_tile(board)
         lost = has_lost(board)
-        print(f"GAME OVER; Total score: {total_score}")
+        if lost:
+            print(f"GAME OVER; Total score: {total_score}")
         print(board)
 
+# Todo: module level RNG needs to be replaced
 
 
