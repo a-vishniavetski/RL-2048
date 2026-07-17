@@ -23,7 +23,7 @@ def make_move(move: Move, board, rng):
     return reward, afterstate
 
 
-def evaluate():
+def evaluate(state: np.ndarray):
     return random.choice([Move.LEFT, Move.RIGHT, Move.UP, Move.DOWN])
 
 
@@ -61,7 +61,7 @@ def play_episode(evaluation_function, evaluation_learning_function):
 
 
 if __name__ == "__main__":
-    number_of_games = 2000
+    number_of_games = 300
     games_played = 0
     score_all_games = 0
     highest_tile = 2
@@ -79,3 +79,5 @@ if __name__ == "__main__":
     print(
         f"Played {games_played} games, Avg. Reward: {_average:.2f}, Highest tile: {highest_tile}"
     )
+
+    # ToDo: logging total score and highest tile each game; abstraction layer to set experiment hyperparams; RL implementation
