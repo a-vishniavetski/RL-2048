@@ -27,7 +27,8 @@ if __name__ == "__main__":
         print(f"Made move: {next_move.name}")
         print(f"Board has changed: {board_has_changed}")
         total_score += move_score
-        spawn_random_tile(board)
+        if board_has_changed:
+            spawn_random_tile(board)
         lost = has_lost(board)
         print(f"GAME OVER; Total score: {total_score}")
         print(board)
