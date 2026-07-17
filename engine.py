@@ -14,7 +14,7 @@ rng = np.random.default_rng(0)
 
 
 def init_board():
-    board = np.zeros((4, 4), dtype=np.int16)
+    board = np.zeros((4, 4), dtype=np.int32)
     spawn_random_tile(board)
     spawn_random_tile(board)
     return board
