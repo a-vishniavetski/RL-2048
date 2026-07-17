@@ -1,45 +1,84 @@
+import random
 import numpy as np
 from engine import (
-    move_left_or_right, move_up_or_down, init_board, has_lost, init_board, spawn_random_tile, Move
+    move_left_or_right,
+    move_up_or_down,
+    init_board,
+    has_lost,
+    init_board,
+    spawn_random_tile,
+    Move,
 )
 
-import random
-from enum import Enum
 
-
-def choose_move():
+def evaluate():
     return random.choice([Move.LEFT, Move.RIGHT, Move.UP, Move.DOWN])
 
+
 def make_move(move: Move, board):
-    if move in (Move.LEFT, Move.RIGHT):
-        move_score, board_has_changed = move_left_or_right(board, move)
-        return move_score, board_has_changed
-    move_score, board_has_changed = move_up_or_down(board, move)
-    return move_score, board_has_changed
+    move_function = move_left_or_right if move in (Move.LEFT, Move.RIGHT) else move_up_or_down
+
+    reward, board_has_changed = move_function(board, move)  # board is in afterstate s'
+    afterstate = board.copy()
+    if board_has_changed:
+        spawn_random_tile(board, rng)  # board is in the next state, s''
+    return reward, afterstate
+
+
+def learn_evaluation(state, action, reward, afterstate, new_state):
+    pass
+
+class Env():
+    pass
 
 
 if __name__ == "__main__":
-    rng = np.random.default_rng(0)
-    history: list[tuple[Move, np.ndarray]] = []
-    board = init_board(rng)
-    total_score = 0
-    lost = False
-    history.append((None, board.copy()))
-    while not lost:
-        next_move = choose_move()
-        move_score, board_has_changed =  make_move(next_move, board)
-        total_score += move_score
-        if board_has_changed:
-            spawn_random_tile(board, rng)
-        history.append((next_move, board.copy()))
-        lost = has_lost(board)
-        if lost:
-            print(f"GAME OVER; Total score: {total_score}")
+    number_of_games = 1000
+    games_played = 0
+    reward_all_games = 0
+    highest_tile = 2
 
-    for last_move, _board in history:
-        print(f"Last move: {last_move}")
-        print(_board, end="\n\n")
+    while games_played < number_of_games:
+        rng = np.random.default_rng(0)
+        history: list[tuple[Move, np.ndarray]] = []
+        state = init_board(rng)
+        episode_reward = 0
+        terminal_state = False
+        history.append((None, state.copy()))
+        training = False
+        while not terminal_state:
+            old_state = state.copy()
+            action = evaluate()
+            reward, afterstate = make_move(action, state)  # board is in new state s''
 
-# Todo: module level RNG needs to be replaced
+            if training:
+                learn_evaluation(old_state, action, reward, afterstate, state)
 
+            # print("\n")
+            # print("State s:")
+            # print(old_state)
+            # print(f"Action: {action.name}")
+            # print(f"Afterstate s':")
+            # print(afterstate)
+            # print(f"New state s'':")
+            # print(state)
 
+            episode_reward += reward
+            history.append((action, state.copy()))
+
+            terminal_state = has_lost(state)
+            # if terminal_state:
+            #     print(f"GAME OVER; Total reward: {episode_reward}")
+
+        games_played += 1
+        reward_all_games += episode_reward
+        this_game_highest_tile = state.max()
+        if this_game_highest_tile > highest_tile:
+            highest_tile = this_game_highest_tile
+
+        _average =reward_all_games / games_played
+        print(f"Played {games_played} games, total reward: {reward_all_games}, Avg.: {_average:.2f}, Highest tile: {highest_tile}")
+
+        # for last_action, _state in history:
+        #     print(f"Last action: {last_action}")
+        #     print(_state, end="\n\n")

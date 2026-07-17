@@ -3,8 +3,9 @@ from numpy import ndarray, array
 
 from enum import Enum
 
+
 class Move(Enum):
-    LEFT  = 1
+    LEFT = 1
     RIGHT = 2
     UP = 3
     DOWN = 4
@@ -16,10 +17,12 @@ def init_board(rng):
     spawn_random_tile(board, rng)
     return board
 
+
 def check_wincon(board):
     if (board == 2048).any():
         return True
     return False
+
 
 def move_row(row, _reversed: bool = False):
     """Move and merge row to the left. Set reversed for right.
@@ -49,15 +52,18 @@ def move_row(row, _reversed: bool = False):
     else:
         new_row = np.pad(compressed_row, (0, cells_to_pad))
 
-    row_has_changed = (not np.array_equal(row, new_row))
+    row_has_changed = not np.array_equal(row, new_row)
     return new_row, row_moving_score, row_has_changed
+
 
 def move_left_or_right(board: ndarray, direction: Move):
     _reversed = False if direction is Move.LEFT else True
     move_score = 0
     board_has_changed = False
     for row_index in range(0, 4):
-        board[row_index], row_moving_score, row_has_changed = move_row(board[row_index], _reversed=_reversed)
+        board[row_index], row_moving_score, row_has_changed = move_row(
+            board[row_index], _reversed=_reversed
+        )
         move_score += row_moving_score
         if row_has_changed:
             board_has_changed = True
@@ -76,10 +82,11 @@ def move_up_or_down(board: ndarray, direction: Move):
 
 def has_moves(board):
     return (
-        (board == 0).any() or
-        (board[:, :-1] == board[:, 1:]).any() or
-        (board[:-1, :] == board[1:, :]).any()
+        (board == 0).any()
+        or (board[:, :-1] == board[:, 1:]).any()
+        or (board[:-1, :] == board[1:, :]).any()
     )
+
 
 def spawn_random_tile(board: ndarray, rng):
     empty = np.flatnonzero(board == 0)
@@ -91,6 +98,7 @@ def spawn_random_tile(board: ndarray, rng):
 def has_lost(board):
     return not has_moves(board)
 
+
 if __name__ == "__main__":
     rng = np.random.default_rng(0)
     board = init_board(rng)
@@ -101,4 +109,3 @@ if __name__ == "__main__":
     print(board)
     spawn_random_tile(board, rng)
     print(board)
-
