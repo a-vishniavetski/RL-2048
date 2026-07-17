@@ -10,13 +10,10 @@ class Move(Enum):
     DOWN = 4
 
 
-rng = np.random.default_rng(0)
-
-
-def init_board():
+def init_board(rng):
     board = np.zeros((4, 4), dtype=np.int32)
-    spawn_random_tile(board)
-    spawn_random_tile(board)
+    spawn_random_tile(board, rng)
+    spawn_random_tile(board, rng)
     return board
 
 def check_wincon(board):
@@ -84,7 +81,7 @@ def has_moves(board):
         (board[:-1, :] == board[1:, :]).any()
     )
 
-def spawn_random_tile(board: ndarray):
+def spawn_random_tile(board: ndarray, rng):
     empty = np.flatnonzero(board == 0)
     if empty.size:
         idx = rng.choice(empty)
@@ -95,12 +92,13 @@ def has_lost(board):
     return not has_moves(board)
 
 if __name__ == "__main__":
-    board = init_board()
+    rng = np.random.default_rng(0)
+    board = init_board(rng)
     print(board)
-    spawn_random_tile(board)
+    spawn_random_tile(board, rng)
     print(board)
-    spawn_random_tile(board)
+    spawn_random_tile(board, rng)
     print(board)
-    spawn_random_tile(board)
+    spawn_random_tile(board, rng)
     print(board)
 

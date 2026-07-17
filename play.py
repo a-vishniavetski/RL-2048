@@ -1,3 +1,4 @@
+import numpy as np
 from engine import (
     move_left_or_right, move_up_or_down, init_board, has_lost, init_board, spawn_random_tile, Move
 )
@@ -18,21 +19,26 @@ def make_move(move: Move, board):
 
 
 if __name__ == "__main__":
-    board = init_board()
+    rng = np.random.default_rng(0)
+    history: list[tuple[Move, np.ndarray]] = []
+    board = init_board(rng)
     total_score = 0
     lost = False
+    history.append((None, board.copy()))
     while not lost:
         next_move = choose_move()
         move_score, board_has_changed =  make_move(next_move, board)
-        print(f"Made move: {next_move.name}")
-        print(f"Board has changed: {board_has_changed}")
         total_score += move_score
         if board_has_changed:
-            spawn_random_tile(board)
+            spawn_random_tile(board, rng)
+        history.append((next_move, board.copy()))
         lost = has_lost(board)
         if lost:
             print(f"GAME OVER; Total score: {total_score}")
-        print(board)
+
+    for last_move, _board in history:
+        print(f"Last move: {last_move}")
+        print(_board, end="\n\n")
 
 # Todo: module level RNG needs to be replaced
 
