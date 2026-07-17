@@ -1,30 +1,21 @@
 from engine import (
-    move_down,  move_left, move_right, move_up, init_board, has_lost, init_board, spawn_random_tile
+    move_left_or_right, move_up_or_down, init_board, has_lost, init_board, spawn_random_tile, Move
 )
 
 import random
 from enum import Enum
 
-class Move(Enum):
-    LEFT  = 1
-    RIGHT = 2
-    UP = 3
-    DOWN = 4
 
 def choose_move():
     return random.choice([Move.LEFT, Move.RIGHT, Move.UP, Move.DOWN])
 
 def make_move(move: Move, board):
-    match move:
-        case Move.LEFT:
-            move_score = move_left(board)
-        case Move.RIGHT:
-            move_score = move_right(board)
-        case Move.UP:
-            move_score = move_up(board)
-        case Move.DOWN:
-            move_score = move_down(board)
-    return move_score
+    if move in (Move.LEFT, Move.RIGHT):
+        move_score, board_has_changed = move_left_or_right(board, move)
+        return move_score, board_has_changed
+    move_score, board_has_changed = move_up_or_down(board, move)
+    return move_score, board_has_changed
+
 
 if __name__ == "__main__":
     board = init_board()
@@ -32,11 +23,14 @@ if __name__ == "__main__":
     lost = False
     while not lost:
         next_move = choose_move()
-        move_score =  make_move(next_move, board)
+        move_score, board_has_changed =  make_move(next_move, board)
         print(f"Made move: {next_move.name}")
+        print(f"Board has changed: {board_has_changed}")
         total_score += move_score
         spawn_random_tile(board)
         lost = has_lost(board)
+        print(f"GAME OVER; Total score: {total_score}")
         print(board)
+
 
 

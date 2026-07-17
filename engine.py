@@ -1,6 +1,14 @@
 import numpy as np
 from numpy import ndarray, array
 
+from enum import Enum
+
+class Move(Enum):
+    LEFT  = 1
+    RIGHT = 2
+    UP = 3
+    DOWN = 4
+
 
 rng = np.random.default_rng(0)
 
@@ -43,39 +51,30 @@ def move_row(row, _reversed: bool = False):
         new_row = np.pad(compressed_row, (cells_to_pad, 0))
     else:
         new_row = np.pad(compressed_row, (0, cells_to_pad))
-    return new_row, row_moving_score
 
+    row_has_changed = (not np.array_equal(row, new_row))
+    return new_row, row_moving_score, row_has_changed
 
-def move_left(board: ndarray):
+def move_left_or_right(board: ndarray, direction: Move):
+    _reversed = False if direction is Move.LEFT else True
     move_score = 0
+    board_has_changed = False
     for row_index in range(0, 4):
-        board[row_index], row_moving_score = move_row(board[row_index])
+        board[row_index], row_moving_score, row_has_changed = move_row(board[row_index], _reversed=_reversed)
         move_score += row_moving_score
-    return move_score
+        if row_has_changed:
+            board_has_changed = True
+    return move_score, board_has_changed
 
 
-def move_right(board: ndarray):
-    move_score = 0
-    for row_index in range(0, 4):
-        board[row_index], row_moving_score = move_row(board[row_index], _reversed=True)
-        move_score += row_moving_score
-    return move_score
-
-
-def move_up(board: ndarray):
-    move_score = 0
+def move_up_or_down(board: ndarray, direction: Move):
     transposed_board = np.transpose(board)
-    move_left(transposed_board)
+    if direction is Move.UP:
+        move_score, board_has_changed = move_left_or_right(transposed_board, Move.LEFT)
+    else:
+        move_score, board_has_changed = move_left_or_right(transposed_board, Move.RIGHT)
     board = transposed_board
-    return move_score
-
-
-def move_down(board: ndarray):
-    move_score = 0
-    transposed_board = np.transpose(board)
-    move_right(transposed_board)
-    board = transposed_board
-    return move_score
+    return move_score, board_has_changed
 
 
 def has_moves(board):
