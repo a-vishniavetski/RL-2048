@@ -26,7 +26,7 @@ def make_move(move: Move, board, rng):
         spawn_random_tile(board, rng)  # board is in the next state, s''
     else:
         # don't spawn random tile
-        reward = -1000  # punish actions without any effects
+        reward = -10000  # punish actions without any effects
     return reward, afterstate
 
 
@@ -84,7 +84,7 @@ class ActionEvaluationPolicy():
         network_for_action.update_value_function(old_state, new_state_value)
 
 
-def play_episode(policy: ActionEvaluationPolicy):
+def play_episode(policy: ActionEvaluationPolicy, debug_game_num: int = None):
     rng = np.random.default_rng(0)
     history: list[tuple[Move, np.ndarray]] = []
     state = init_board(rng)
@@ -92,10 +92,12 @@ def play_episode(policy: ActionEvaluationPolicy):
     is_terminal_state = False
     history.append((None, state.copy()))
     training = True
+    action_counter = 1  # debug
     while not is_terminal_state:
         old_state = state.copy()
         action = policy.determine_action(state)
-        print(f"Determined next action: {action.name}")
+        print(f"Game [{debug_game_num}] Action [{action_counter}]: {action.name}")
+        action_counter += 1
         reward, afterstate = make_move(action, state, rng)  # board is in new state s''
 
         if training:
@@ -125,15 +127,33 @@ if __name__ == "__main__":
     score_all_games = 0
     highest_tile = 2
 
-    n_tuple = N_tuple([(0,1), (1, 1), (2, 1), (3, 1)])
-    n_tuple_2 = N_tuple([(0,2), (1, 2), (2, 2), (3, 2)])
-    network = NTupleNetwork([n_tuple, n_tuple_2])
+    tuples = []
+    # 4 vertical 4-tuples
+    for j in range(4):
+        n_tuple = N_tuple(
+            [
+                (i, j) for i in range(4)
+            ]
+        )
+        tuples.append(n_tuple)
+
+    # 4 horizontal 4-tuples
+    for i in range(4):
+        n_tuple = N_tuple(
+            [
+                (i, j) for j in range(4)
+            ]
+        )
+        tuples.append(n_tuple)
+
+
+    network = NTupleNetwork(tuples)
     networks = [deepcopy(network) for _ in range(4)]
 
     policy = ActionEvaluationPolicy(networks)
 
     while games_played < number_of_games:
-        episode_score, this_game_highest_tile = play_episode(policy)
+        episode_score, this_game_highest_tile = play_episode(policy, games_played + 1)
         games_played += 1
         score_all_games += episode_score
         if this_game_highest_tile > highest_tile:
