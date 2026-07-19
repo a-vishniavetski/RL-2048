@@ -60,6 +60,18 @@ def play_episode(evaluation_function, evaluation_learning_function):
     return score, highest_tile
 
 
+def action_evaluation_function():
+    pass  # returns the value of state value function specific for a given action
+
+
+def state_evaluation_function():
+    pass  # uses a single state value function
+
+
+def afterstate_evaluation_function():
+    pass  # uses a single state value function
+
+
 if __name__ == "__main__":
     number_of_games = 300
     games_played = 0
