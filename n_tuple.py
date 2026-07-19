@@ -5,7 +5,7 @@ import numpy as np
 BOARD_DTYPE = np.int16
 TUPLE_WEIGHTS_DTYPE  = np.float32
 
-C = 15  # := maximum_power_of_two_allowed + 1
+C = 15  # := maximum_power_of_two_allowed + 1, exponents that denotes the number of possible board values
 BOARD = np.array(
     [
         [2, 2, 4, 4],
@@ -34,19 +34,27 @@ def weight_lookup_index(board_elements: np.ndarray, c: int = C, tuple_length: in
     weight_index = encoded_board_elements @ precomputed_powers
     return weight_index
 
-# n-tuple network of m tuples implements a function approximator f(s) :=
-def state_value_function(tuple_network: List[N_tuple], board_state: np.ndarray):
-    assert board_state.dtype == BOARD_DTYPE, f"Game board elements must be dtype={BOARD_DTYPE}"
-    state_value = 0
-    for _tuple in tuple_network:
-        rows, cols = zip(*_tuple.locations)
-        relevant_elements = board_state[rows, cols]
-        combination_weight = _tuple.lookup_table[weight_lookup_index(relevant_elements, tuple_length=_tuple._length)]
-        state_value += combination_weight
-    return state_value
+
+class NTupleNetwork():
+
+    def __init__(self, location_tuples: List[N_tuple]):
+        self.tuples = location_tuples
+
+    # n-tuple network of m tuples implements a function approximator f(s) :=
+    def state_value_function(self, board_state: np.ndarray):
+        assert board_state.dtype == BOARD_DTYPE, f"Game board elements must be dtype={BOARD_DTYPE}"
+        state_value = 0
+        for _tuple in self.tuples:
+            rows, cols = zip(*_tuple.locations)
+            relevant_elements = board_state[rows, cols]
+            combination_weight = _tuple.lookup_table[weight_lookup_index(relevant_elements, tuple_length=_tuple._length)]
+            state_value += combination_weight
+        return state_value
+
 
 if __name__ == "__main__":
     n_tuple = N_tuple([(0,1), (1, 1), (2, 1), (3, 1)])
+    n_tuple_2 = N_tuple([(0,2), (1, 2), (2, 2), (3, 2)])
     print("Tuple locations:", n_tuple.locations)
     rows, cols = zip(*n_tuple.locations)
     relevant_elements = BOARD[rows, cols]
@@ -54,7 +62,10 @@ if __name__ == "__main__":
     print(f"Index of relevant elements: {weight_lookup_index(relevant_elements)}")
     print(len(n_tuple.lookup_table))  # at C = 15 and n = 4 matches the paper network 17* 15*4 = 860 625
     print(f"Weight at the index: {n_tuple.lookup_table[weight_lookup_index(relevant_elements)]}")
-    board_value = state_value_function([n_tuple,], BOARD)
+
+    network = NTupleNetwork([n_tuple, n_tuple_2])
+
+    board_value = network.state_value_function(BOARD)
     print(board_value)
 
 
