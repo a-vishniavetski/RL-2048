@@ -22,18 +22,16 @@ class N_tuple():
         self.lookup_size = c**self._length
         self.lookup_table = np.zeros(self.lookup_size, dtype=TUPLE_WEIGHTS_DTYPE)
 
-def weight_lookup_index(board_elements: np.ndarray, c: int = C, n: int = 4):
+def weight_lookup_index(board_elements: np.ndarray, c: int = C, tuple_length: int = 4):
     # we encode board values ("2", "16") into their powers of 2 (1, 4); then convert to base-c from base-10
 
     assert isinstance(board_elements, np.ndarray), "board values must be a NumPy ndarray"
 
-    encoded_board_elements = np.zeros_like(board_elements)
+    encoded_board_elements = np.zeros_like(board_elements, dtype=BOARD_DTYPE)
     non_zero_mask = board_elements != 0
     encoded_board_elements[non_zero_mask] = np.log2(board_elements[non_zero_mask]).astype(BOARD_DTYPE)
-    weight_index = 0
-    for tuple_element_position in range(0, n):
-        value = encoded_board_elements[tuple_element_position]
-        weight_index += value * (c ** (tuple_element_position))
+    precomputed_powers = c * np.arange(tuple_length)
+    weight_index = encoded_board_elements @ precomputed_powers
     return weight_index
 
 # n-tuple network of m tuples implements a function approximator f(s) :=
@@ -43,7 +41,7 @@ def state_value_function(tuple_network: List[N_tuple], board_state: np.ndarray):
     for _tuple in tuple_network:
         rows, cols = zip(*_tuple.locations)
         relevant_elements = board_state[rows, cols]
-        combination_weight = _tuple.lookup_table[weight_lookup_index(relevant_elements, n=_tuple._length)]
+        combination_weight = _tuple.lookup_table[weight_lookup_index(relevant_elements, tuple_length=_tuple._length)]
         state_value += combination_weight
     return state_value
 
