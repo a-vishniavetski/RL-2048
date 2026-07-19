@@ -2,22 +2,25 @@ from dataclasses import dataclass
 from typing import Tuple, List
 import numpy as np
 
-C = 15  # := maximum_power_of_two_allowed - 1
+BOARD_DTYPE = np.int16
+TUPLE_WEIGHTS_DTYPE  = np.float32
+
+C = 15  # := maximum_power_of_two_allowed + 1
 BOARD = np.array(
     [
         [2, 2, 4, 4],
         [2, 0, 4, 4],
         [0, 4, 4, 2],
         [2, 8, 4, 4],
-    ]
+    ], dtype=BOARD_DTYPE
 )
 
 class N_tuple():
-    def __init__(self, locations: List[Tuple[int, int]], c: int = C, tuple_length: int = 4):
+    def __init__(self, locations: List[Tuple[int, int]], c: int = C):
         self.locations = locations  # predetermined sequence of board locations
-        rng = np.random.default_rng()
-        self.lookup_size = C**tuple_length
-        self.lookup_table = np.random.rand(self.lookup_size)
+        self._length = len(self.locations)
+        self.lookup_size = c**self._length
+        self.lookup_table = np.zeros(self.lookup_size, dtype=TUPLE_WEIGHTS_DTYPE)
 
 def weight_lookup_index(board_elements: np.ndarray, c: int = C, n: int = 4):
     # we encode board values ("2", "16") into their powers of 2 (1, 4); then convert to base-c from base-10
@@ -26,7 +29,7 @@ def weight_lookup_index(board_elements: np.ndarray, c: int = C, n: int = 4):
 
     encoded_board_elements = np.zeros_like(board_elements)
     non_zero_mask = board_elements != 0
-    encoded_board_elements[non_zero_mask] = np.log2(board_elements[non_zero_mask]).astype(np.int32)
+    encoded_board_elements[non_zero_mask] = np.log2(board_elements[non_zero_mask]).astype(BOARD_DTYPE)
     weight_index = 0
     for tuple_element_position in range(0, n):
         value = encoded_board_elements[tuple_element_position]
@@ -35,11 +38,12 @@ def weight_lookup_index(board_elements: np.ndarray, c: int = C, n: int = 4):
 
 # n-tuple network of m tuples implements a function approximator f(s) :=
 def state_value_function(tuple_network: List[N_tuple], board_state: np.ndarray):
+    assert board_state.dtype == BOARD_DTYPE, f"Game board elements must be dtype={BOARD_DTYPE}"
     state_value = 0
     for _tuple in tuple_network:
         rows, cols = zip(*_tuple.locations)
         relevant_elements = board_state[rows, cols]
-        combination_weight = _tuple.lookup_table[weight_lookup_index(relevant_elements)]
+        combination_weight = _tuple.lookup_table[weight_lookup_index(relevant_elements, n=_tuple._length)]
         state_value += combination_weight
     return state_value
 
