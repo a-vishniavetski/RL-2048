@@ -4,6 +4,8 @@ from numpy import ndarray, array
 from enum import Enum
 
 
+BOARD_DTYPE = np.int16
+
 class Move(Enum):
     LEFT = 1
     RIGHT = 2
@@ -12,7 +14,7 @@ class Move(Enum):
 
 
 def init_board(rng):
-    board = np.zeros((4, 4), dtype=np.int32)
+    board = np.zeros((4, 4), dtype=BOARD_DTYPE)
     spawn_random_tile(board, rng)
     spawn_random_tile(board, rng)
     return board

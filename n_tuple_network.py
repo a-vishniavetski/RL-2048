@@ -22,6 +22,11 @@ class N_tuple():
         self.lookup_size = c**self._length
         self.lookup_table = np.zeros(self.lookup_size, dtype=TUPLE_WEIGHTS_DTYPE)
 
+    def get_board_elements(self, board_state: np.ndarray):
+        rows, cols = zip(*self.locations)
+        relevant_elements = board_state[rows, cols]
+        return relevant_elements
+
 def weight_lookup_index(board_elements: np.ndarray, c: int = C, tuple_length: int = 4):
     # we encode board values ("2", "16") into their powers of 2 (1, 4); then convert to base-c from base-10
 
@@ -45,11 +50,16 @@ class NTupleNetwork():
         assert board_state.dtype == BOARD_DTYPE, f"Game board elements must be dtype={BOARD_DTYPE}"
         state_value = 0
         for _tuple in self.tuples:
-            rows, cols = zip(*_tuple.locations)
-            relevant_elements = board_state[rows, cols]
+            relevant_elements = _tuple.get_board_elements(board_state)
             combination_weight = _tuple.lookup_table[weight_lookup_index(relevant_elements, tuple_length=_tuple._length)]
             state_value += combination_weight
         return state_value
+
+    def update_value_function(self, board_state: np.ndarray, new_state_value: float):
+        for _tuple in self.tuples:
+            relevant_elements = _tuple.get_board_elements(board_state)
+            _index = weight_lookup_index(relevant_elements, tuple_length=_tuple._length)
+            _tuple.lookup_table[_index] = new_state_value
 
 
 if __name__ == "__main__":

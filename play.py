@@ -1,3 +1,5 @@
+from copy import deepcopy
+from typing import List
 import random
 import numpy as np
 from engine import (
@@ -10,6 +12,8 @@ from engine import (
     Move,
 )
 
+from n_tuple_network import NTupleNetwork, N_tuple, BOARD_DTYPE
+
 
 def make_move(move: Move, board, rng):
     move_function = (
@@ -20,6 +24,9 @@ def make_move(move: Move, board, rng):
     afterstate = board.copy()
     if board_has_changed:
         spawn_random_tile(board, rng)  # board is in the next state, s''
+    else:
+        # don't spawn random tile
+        reward = -1000  # punish actions without any effects
     return reward, afterstate
 
 
@@ -34,34 +41,73 @@ def learn_evaluation(state, action, reward, afterstate, new_state):
 class Env:
     pass
 
+# class Policy():
 
-def play_episode(evaluation_function, evaluation_learning_function):
+#     def __init__(self, networks: List[NTupleNetwork], learning_rate: float = 0.2):
+#         self.networks = networks
+#         self.leaning_rate = learning_rate
+
+class ActionEvaluationPolicy():
+
+    def __init__(self, networks: List[NTupleNetwork], learning_rate: float = 0.2):
+        # super().__init__(networks, learning_rate)
+        self.networks = networks
+        self.learning_rate = learning_rate
+
+    def determine_action(self, state: np.ndarray):
+        action_values = [self.evaluate(state, _action) for _action in Move]
+        return Move(int(np.argmax(action_values)) + 1)  # returns int respective for a Move
+
+    def evaluate(self, state: np.ndarray, action: Move):
+        network_id = action.value - 1  # Enum goes from 1 to 4, list idx from 0 to 3; LEFT corresponds to networks[0]
+        network_for_action = self.networks[network_id]  # V_a(s)
+        action_value = network_for_action.state_value_function(state)
+        return action_value  # returns the value of state value function specific for a given action
+
+    def learn_evaluation(self, old_state: np.ndarray, action: Move, reward: float, afterstate: np.ndarray, state: np.ndarray):
+        # best_next_action = None
+        # best_next_action_value = -np.inf
+        # for next_action in (Move.LEFT, Move.RIGHT, Move.UP, Move.DOWN):
+        #     next_action_value = self.evaluate(state, next_action)
+        #     if next_action_value > best_next_action_value:
+        #         best_next_action_value  = next_action_value
+        #         best_next_action = next_action
+        next_action_values = [self.evaluate(state, next_action) for next_action in Move]
+        best_next_action_value = np.max(next_action_values)
+        best_next_action = Move(int(np.argmax(next_action_values)) + 1)
+        network_id = best_next_action.value - 1
+        network_for_action = self.networks[network_id]
+
+        old_state_action_value = network_for_action.state_value_function(state)
+        oldstate_newstate_delta = best_next_action_value - old_state_action_value
+        new_state_value = old_state_action_value + self.learning_rate * (reward + oldstate_newstate_delta)
+        network_for_action.update_value_function(old_state, new_state_value)
+
+
+def play_episode(policy: ActionEvaluationPolicy):
     rng = np.random.default_rng(0)
     history: list[tuple[Move, np.ndarray]] = []
     state = init_board(rng)
     score = 0
-    terminal_state = False
+    is_terminal_state = False
     history.append((None, state.copy()))
-    training = False
-    while not terminal_state:
+    training = True
+    while not is_terminal_state:
         old_state = state.copy()
-        action = evaluation_function(state)
+        action = policy.determine_action(state)
+        print(f"Determined next action: {action.name}")
         reward, afterstate = make_move(action, state, rng)  # board is in new state s''
 
         if training:
-            evaluation_learning_function(old_state, action, reward, afterstate, state)
+            policy.learn_evaluation(old_state, action, reward, afterstate, state)
 
         score += reward
         history.append((action, state.copy()))
-
-        terminal_state = has_lost(state)
+        print(state)
+        is_terminal_state = has_lost(state)
 
     highest_tile = state.max()
     return score, highest_tile
-
-
-def action_evaluation_function():
-    pass  # returns the value of state value function specific for a given action
 
 
 def state_evaluation_function():
@@ -73,15 +119,21 @@ def afterstate_evaluation_function():
 
 
 if __name__ == "__main__":
-    number_of_games = 300
+
+    number_of_games = 10
     games_played = 0
     score_all_games = 0
     highest_tile = 2
 
+    n_tuple = N_tuple([(0,1), (1, 1), (2, 1), (3, 1)])
+    n_tuple_2 = N_tuple([(0,2), (1, 2), (2, 2), (3, 2)])
+    network = NTupleNetwork([n_tuple, n_tuple_2])
+    networks = [deepcopy(network) for _ in range(4)]
+
+    policy = ActionEvaluationPolicy(networks)
+
     while games_played < number_of_games:
-        episode_score, this_game_highest_tile = play_episode(
-            evaluation_function=evaluate, evaluation_learning_function=learn_evaluation
-        )
+        episode_score, this_game_highest_tile = play_episode(policy)
         games_played += 1
         score_all_games += episode_score
         if this_game_highest_tile > highest_tile:
@@ -91,5 +143,7 @@ if __name__ == "__main__":
     print(
         f"Played {games_played} games, Avg. Reward: {_average:.2f}, Highest tile: {highest_tile}"
     )
+
+
 
     # ToDo: logging total score and highest tile each game; abstraction layer to set experiment hyperparams; RL implementation
